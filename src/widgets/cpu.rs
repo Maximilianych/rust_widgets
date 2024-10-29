@@ -1,7 +1,10 @@
 use sysinfo::System;
 
-pub fn cpu_usage(system: &mut System) -> Vec<f32> {
+pub mod prelude {
+    pub use super::cpu_usage;
+}
 
+pub fn cpu_usage(system: &mut System) -> Vec<f32> {
     let mut cpu_usage = Vec::new();
 
     system.refresh_cpu_usage();

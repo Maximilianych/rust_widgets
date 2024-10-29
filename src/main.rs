@@ -5,7 +5,6 @@ use gui::WidgetApp;
 
 fn main() -> eframe::Result {
     let native_options = eframe::NativeOptions {
-        
         ..Default::default()
     };
     eframe::run_native(
