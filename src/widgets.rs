@@ -1,5 +1,7 @@
 pub mod cpu;
 
-pub fn cpu_usage() {
-    cpu::cpu_usage();
+use sysinfo::System;
+
+pub fn cpu_usage(system: &mut System) -> Vec<f32> {
+    cpu::cpu_usage(system)
 }
