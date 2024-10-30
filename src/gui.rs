@@ -1,11 +1,12 @@
 use std::time;
-use sysinfo::System;
+use sysinfo::{Disks, System};
 
 use crate::widgets;
 
 // WidgetApp
 pub struct WidgetApp {
     system: System,
+    discs: Disks,
     frame_duration: time::Duration,
 }
 
@@ -14,7 +15,8 @@ impl Default for WidgetApp {
     fn default() -> Self {
         Self {
             system: System::new(),
-            frame_duration: time::Duration::from_secs_f64(1.0 / 5.0),
+            discs: Disks::new_with_refreshed_list(),
+            frame_duration: time::Duration::from_secs_f64(1.0 / 60.0),
         }
     }
 }
@@ -50,29 +52,53 @@ impl eframe::App for WidgetApp {
                 // TODO: beautiful groups
                 ui.label(format!(
                     "Total memory: {:.2} MB",
-                    memory_usage.total_memory / 1_048_576
+                    memory_usage.total_memory as f64 / 1_048_576.0
                 ));
                 ui.label(format!(
                     "Used memory: {:.2} MB",
-                    memory_usage.used_memory / 1_048_576
+                    memory_usage.used_memory as f64 / 1_048_576.0
                 ));
                 ui.label(format!(
                     "Free memory: {:.2} MB",
-                    memory_usage.free_memory / 1_048_576
+                    memory_usage.free_memory as f64 / 1_048_576.0
                 ));
                 ui.label(format!(
                     "Total swap: {:.2} MB",
-                    memory_usage.total_swap / 1_048_576
+                    memory_usage.total_swap as f64 / 1_048_576.0
                 ));
                 ui.label(format!(
                     "Used swap: {:.2} MB",
-                    memory_usage.used_swap / 1_048_576
+                    memory_usage.used_swap as f64 / 1_048_576.0
                 ));
                 ui.label(format!(
                     "Free swap: {:.2} MB",
-                    memory_usage.free_swap / 1_048_576
+                    memory_usage.free_swap as f64 / 1_048_576.0
                 ))
             });
+
+            // Disk Usage
+            egui::Window::new("Disk Usage").show(ctx, |ui| {
+                let disk_usage = widgets::disk_usage(&mut self.discs);
+                for disc in disk_usage {
+                    ui.horizontal(|ui| {
+                        ui.label(format!(
+                            "{} {}",
+                            disc.name().to_string_lossy(),
+                            disc.mount_point().to_string_lossy()
+                        ));
+                        ui.vertical(|ui| {
+                            ui.label(format!(
+                                "Available: {:.2} GB",
+                                disc.available_space() as f64 / 1_048_576.0
+                            ));
+                            ui.label(format!(
+                                "Total: {:.2} GB",
+                                disc.total_space() as f64 / 1_048_576.0
+                            ));
+                        })
+                    });
+                }
+            })
         });
 
         // TODO: adequate frame limitation
