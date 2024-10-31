@@ -1,5 +1,6 @@
 use std::time;
 use sysinfo::{Disks, System};
+use egui_plot::{Line, Plot, PlotPoints};
 
 use crate::widgets;
 
@@ -98,7 +99,23 @@ impl eframe::App for WidgetApp {
                         })
                     });
                 }
-            })
+            });
+
+            // test
+            egui::Window::new("Test").show(ctx, |ui| {
+                let sin: Vec<_> = (0..1000).map(|i| {
+                    let x = i as f64 * 0.01;
+                    [x, x.sin()]
+                }).collect();
+
+                let line_1 = Line::new(sin.to_vec());
+                let line_2 = Line::new(sin.to_vec());
+                let line_3 = Line::new(sin.to_vec());
+
+                Plot::new("sin_plot_1").view_aspect(10.0).show(ui, |plot_ui| plot_ui.line(line_1));
+                Plot::new("sin_plot_2").view_aspect(2.0).show(ui, |plot_ui| plot_ui.line(line_2));
+                Plot::new("sin_plot_3").view_aspect(3.0).show(ui, |plot_ui| plot_ui.line(line_3));
+            });
         });
 
         // TODO: adequate frame limitation

@@ -8,4 +8,5 @@ edition = "2021"
 [dependencies]
 egui = "0.29"
 eframe = "0.29"
+egui_plot = "0.29"
 sysinfo = "0.32"
