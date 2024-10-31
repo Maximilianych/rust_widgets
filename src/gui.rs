@@ -1,3 +1,4 @@
+use chrono::Local;
 use egui_plot::{Line, Plot};
 use std::collections::VecDeque;
 use std::time;
@@ -94,11 +95,11 @@ impl eframe::App for WidgetApp {
                         ));
                         ui.vertical(|ui| {
                             ui.label(format!(
-                                "Available: {:.2} GB",
+                                "Available: {:.2} MB",
                                 disc.available_space() as f64 / 1_048_576.0
                             ));
                             ui.label(format!(
-                                "Total: {:.2} GB",
+                                "Total: {:.2} MB",
                                 disc.total_space() as f64 / 1_048_576.0
                             ));
                         })
@@ -131,15 +132,16 @@ impl eframe::App for WidgetApp {
                     .show(ui, |plot_ui| plot_ui.line(cpu_usage_line));
             });
 
-            // memory usage plot
+            // Memory Usage Plot
             egui::Window::new("Memory Usage Plot").show(ctx, |ui| {
                 self.system.refresh_memory();
 
-                self.memory_usage_history.push_back(self.system.used_memory() as f32 / 1_048_576.0);
+                self.memory_usage_history
+                    .push_back(self.system.used_memory() as f32 / 1_048_576.0);
                 if self.memory_usage_history.len() > 100 {
                     self.memory_usage_history.pop_front();
                 }
-                
+
                 let memory_usage_points: Vec<_> = self
                     .memory_usage_history
                     .iter()
@@ -154,6 +156,12 @@ impl eframe::App for WidgetApp {
                     .include_y(self.system.total_memory() as f64 / 1_048_576.0)
                     .include_x(100.0)
                     .show(ui, |plot_ui| plot_ui.line(memory_usage_line));
+            });
+
+            // Clock
+            egui::Window::new("Clock").show(ctx, |ui| {
+                let dt = Local::now();
+                ui.label(format!("Time: {}, Date: {}", dt.time().format("%H:%M:%S"), dt.date_naive()));
             });
         });
 
