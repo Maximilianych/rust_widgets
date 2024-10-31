@@ -1,6 +1,7 @@
+use egui_plot::{Line, Plot};
+use std::collections::VecDeque;
 use std::time;
 use sysinfo::{Disks, System};
-use egui_plot::{Line, Plot, PlotPoints};
 
 use crate::widgets;
 
@@ -8,6 +9,8 @@ use crate::widgets;
 pub struct WidgetApp {
     system: System,
     discs: Disks,
+    cpu_usage_history: VecDeque<f32>,
+    memory_usage_history: VecDeque<f32>,
     frame_duration: time::Duration,
 }
 
@@ -17,6 +20,8 @@ impl Default for WidgetApp {
         Self {
             system: System::new(),
             discs: Disks::new_with_refreshed_list(),
+            cpu_usage_history: VecDeque::with_capacity(100),
+            memory_usage_history: VecDeque::with_capacity(100),
             frame_duration: time::Duration::from_secs_f64(1.0 / 60.0),
         }
     }
@@ -101,20 +106,54 @@ impl eframe::App for WidgetApp {
                 }
             });
 
-            // test
-            egui::Window::new("Test").show(ctx, |ui| {
-                let sin: Vec<_> = (0..1000).map(|i| {
-                    let x = i as f64 * 0.01;
-                    [x, x.sin()]
-                }).collect();
+            // Cpu Usage Plot
+            egui::Window::new("Cpu Usage Plot").show(ctx, |ui| {
+                let cpu_usage: f32 = widgets::cpu_usage(&mut self.system).iter().sum::<f32>()
+                    / self.system.cpus().len() as f32;
+                self.cpu_usage_history.push_back(cpu_usage);
+                if self.cpu_usage_history.len() > 100 {
+                    self.cpu_usage_history.pop_front();
+                };
 
-                let line_1 = Line::new(sin.to_vec());
-                let line_2 = Line::new(sin.to_vec());
-                let line_3 = Line::new(sin.to_vec());
+                let cpu_usage_points: Vec<_> = self
+                    .cpu_usage_history
+                    .iter()
+                    .enumerate()
+                    .map(|(i, v)| [i as f64, *v as f64])
+                    .collect();
+                let cpu_usage_line = Line::new(cpu_usage_points);
 
-                Plot::new("sin_plot_1").view_aspect(10.0).show(ui, |plot_ui| plot_ui.line(line_1));
-                Plot::new("sin_plot_2").view_aspect(2.0).show(ui, |plot_ui| plot_ui.line(line_2));
-                Plot::new("sin_plot_3").view_aspect(3.0).show(ui, |plot_ui| plot_ui.line(line_3));
+                Plot::new("cpu_usage_plot")
+                    .view_aspect(3.0)
+                    .include_y(0.0)
+                    .include_y(100.0)
+                    .include_x(100.0)
+                    .show(ui, |plot_ui| plot_ui.line(cpu_usage_line));
+            });
+
+            // memory usage plot
+            egui::Window::new("Memory Usage Plot").show(ctx, |ui| {
+                self.system.refresh_memory();
+
+                self.memory_usage_history.push_back(self.system.used_memory() as f32 / 1_048_576.0);
+                if self.memory_usage_history.len() > 100 {
+                    self.memory_usage_history.pop_front();
+                }
+                
+                let memory_usage_points: Vec<_> = self
+                    .memory_usage_history
+                    .iter()
+                    .enumerate()
+                    .map(|(i, v)| [i as f64, *v as f64])
+                    .collect();
+                let memory_usage_line = Line::new(memory_usage_points);
+
+                Plot::new("memory_usage_plot")
+                    .view_aspect(3.0)
+                    .include_y(0.0)
+                    .include_y(self.system.total_memory() as f64 / 1_048_576.0)
+                    .include_x(100.0)
+                    .show(ui, |plot_ui| plot_ui.line(memory_usage_line));
             });
         });
 
