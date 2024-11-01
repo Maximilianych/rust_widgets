@@ -12,7 +12,9 @@ pub struct WidgetApp {
     discs: Disks,
     cpu_usage_history: VecDeque<f32>,
     memory_usage_history: VecDeque<f32>,
-    frame_duration: time::Duration,
+    last_update: time::Instant,
+    update_interval: time::Duration,
+    cpu_usage: Vec<f32>,
 }
 
 // Default implementation
@@ -23,7 +25,9 @@ impl Default for WidgetApp {
             discs: Disks::new_with_refreshed_list(),
             cpu_usage_history: VecDeque::with_capacity(100),
             memory_usage_history: VecDeque::with_capacity(100),
-            frame_duration: time::Duration::from_secs_f64(1.0 / 60.0),
+            last_update: time::Instant::now(),
+            update_interval: time::Duration::from_secs(1),
+            cpu_usage: Vec::from([0.0; 16]),
         }
     }
 }
@@ -33,21 +37,33 @@ impl WidgetApp {
     pub fn new(_cc: &eframe::CreationContext<'_>) -> Self {
         Self::default()
     }
+
+    pub fn need_update(&mut self) -> bool {
+        println!("{:?}", self.last_update.elapsed());
+        if self.last_update.elapsed() > self.update_interval {
+            println!("NEED UPDATE");
+            true
+        } else {
+            false
+        }
+    }
 }
 
 // App implementation
 impl eframe::App for WidgetApp {
     fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
-        ctx.request_repaint_after_secs(1.0);
-        let start = std::time::Instant::now();
-
         egui::CentralPanel::default().show(ctx, |ui| {
             ui.heading("Widgets");
+            
+            if self.need_update() {
+                self.cpu_usage = widgets::cpu_usage(&mut self.system);
+                self.last_update = time::Instant::now();
+                println!("UPDATE")
+            }
 
             // Cpu Usage
             egui::Window::new("Cpu Usage").show(ctx, |ui| {
-                let cpu_usage = widgets::cpu_usage(&mut self.system);
-                for (i, cpu) in cpu_usage.iter().enumerate() {
+                for (i, cpu) in self.cpu_usage.iter().enumerate() {
                     ui.label(format!("Cpu {} usage: {:.2}%", i, cpu));
                 }
             });
@@ -161,14 +177,13 @@ impl eframe::App for WidgetApp {
             // Clock
             egui::Window::new("Clock").show(ctx, |ui| {
                 let dt = Local::now();
-                ui.label(format!("Time: {}, Date: {}", dt.time().format("%H:%M:%S"), dt.date_naive()));
+                ui.label(format!(
+                    "Time: {}, Date: {}",
+                    dt.time().format("%H:%M:%S"),
+                    dt.date_naive()
+                ));
             });
         });
-
-        // TODO: adequate frame limitation
-        let duration = start.elapsed();
-        if duration < self.frame_duration {
-            std::thread::sleep(self.frame_duration - duration);
-        }
+        ctx.request_repaint();
     }
 }
