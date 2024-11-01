@@ -1,9 +1,10 @@
 use sysinfo::System;
 
 pub mod prelude {
-    pub use super::memory_usage;
+    pub use super::{memory_usage, MemoryUsage};
 }
 
+#[derive(Default)]
 pub struct MemoryUsage {
     pub total_memory: u64,
     pub used_memory: u64,

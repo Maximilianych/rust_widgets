@@ -15,6 +15,7 @@ pub struct WidgetApp {
     last_update: time::Instant,
     update_interval: time::Duration,
     cpu_usage: Vec<f32>,
+    memory_usage: widgets::MemoryUsage,
 }
 
 // Default implementation
@@ -27,7 +28,8 @@ impl Default for WidgetApp {
             memory_usage_history: VecDeque::with_capacity(100),
             last_update: time::Instant::now(),
             update_interval: time::Duration::from_secs(1),
-            cpu_usage: Vec::from([0.0; 16]),
+            cpu_usage: Vec::new(),
+            memory_usage: widgets::MemoryUsage::default(),
         }
     }
 }
@@ -39,9 +41,7 @@ impl WidgetApp {
     }
 
     pub fn need_update(&mut self) -> bool {
-        println!("{:?}", self.last_update.elapsed());
         if self.last_update.elapsed() > self.update_interval {
-            println!("NEED UPDATE");
             true
         } else {
             false
@@ -57,8 +57,8 @@ impl eframe::App for WidgetApp {
             
             if self.need_update() {
                 self.cpu_usage = widgets::cpu_usage(&mut self.system);
+                self.memory_usage = widgets::memory_usage(&mut self.system);
                 self.last_update = time::Instant::now();
-                println!("UPDATE")
             }
 
             // Cpu Usage
@@ -70,32 +70,31 @@ impl eframe::App for WidgetApp {
 
             // Memory Usage
             egui::Window::new("Memory Usage").show(ctx, |ui| {
-                let memory_usage = widgets::memory_usage(&mut self.system);
 
                 // TODO: beautiful groups
                 ui.label(format!(
                     "Total memory: {:.2} MB",
-                    memory_usage.total_memory as f64 / 1_048_576.0
+                    self.memory_usage.total_memory as f64 / 1_048_576.0
                 ));
                 ui.label(format!(
                     "Used memory: {:.2} MB",
-                    memory_usage.used_memory as f64 / 1_048_576.0
+                    self.memory_usage.used_memory as f64 / 1_048_576.0
                 ));
                 ui.label(format!(
                     "Free memory: {:.2} MB",
-                    memory_usage.free_memory as f64 / 1_048_576.0
+                    self.memory_usage.free_memory as f64 / 1_048_576.0
                 ));
                 ui.label(format!(
                     "Total swap: {:.2} MB",
-                    memory_usage.total_swap as f64 / 1_048_576.0
+                    self.memory_usage.total_swap as f64 / 1_048_576.0
                 ));
                 ui.label(format!(
                     "Used swap: {:.2} MB",
-                    memory_usage.used_swap as f64 / 1_048_576.0
+                    self.memory_usage.used_swap as f64 / 1_048_576.0
                 ));
                 ui.label(format!(
                     "Free swap: {:.2} MB",
-                    memory_usage.free_swap as f64 / 1_048_576.0
+                    self.memory_usage.free_swap as f64 / 1_048_576.0
                 ))
             });
 
