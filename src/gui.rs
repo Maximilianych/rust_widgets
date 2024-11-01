@@ -9,7 +9,7 @@ use crate::widgets;
 // WidgetApp
 pub struct WidgetApp {
     system: System,
-    discs: Disks,
+    disks: Disks,
     cpu_usage_history: VecDeque<f32>,
     memory_usage_history: VecDeque<f32>,
     last_update: time::Instant,
@@ -23,7 +23,7 @@ impl Default for WidgetApp {
     fn default() -> Self {
         Self {
             system: System::new(),
-            discs: Disks::new_with_refreshed_list(),
+            disks: Disks::new_with_refreshed_list(),
             cpu_usage_history: VecDeque::with_capacity(100),
             memory_usage_history: VecDeque::with_capacity(100),
             last_update: time::Instant::now(),
@@ -58,6 +58,7 @@ impl eframe::App for WidgetApp {
             if self.need_update() {
                 self.cpu_usage = widgets::cpu_usage(&mut self.system);
                 self.memory_usage = widgets::memory_usage(&mut self.system);
+                self.disks.refresh();
                 self.last_update = time::Instant::now();
             }
 
@@ -100,8 +101,7 @@ impl eframe::App for WidgetApp {
 
             // Disk Usage
             egui::Window::new("Disk Usage").show(ctx, |ui| {
-                let disk_usage = widgets::disk_usage(&mut self.discs);
-                for disc in disk_usage {
+                for disc in &self.disks {
                     ui.horizontal(|ui| {
                         ui.label(format!(
                             "{} {}",
