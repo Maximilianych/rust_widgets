@@ -59,6 +59,7 @@ impl eframe::App for WidgetApp {
                 self.cpu_usage = widgets::cpu_usage(&mut self.system);
                 self.memory_usage = widgets::memory_usage(&mut self.system);
                 self.disks.refresh();
+                widgets::cpu_usage_history(&mut self.system, &mut self.cpu_usage_history);
                 self.last_update = time::Instant::now();
             }
 
@@ -124,12 +125,6 @@ impl eframe::App for WidgetApp {
 
             // Cpu Usage Plot
             egui::Window::new("Cpu Usage Plot").show(ctx, |ui| {
-                let cpu_usage: f32 = widgets::cpu_usage(&mut self.system).iter().sum::<f32>()
-                    / self.system.cpus().len() as f32;
-                self.cpu_usage_history.push_back(cpu_usage);
-                if self.cpu_usage_history.len() > 100 {
-                    self.cpu_usage_history.pop_front();
-                };
 
                 let cpu_usage_points: Vec<_> = self
                     .cpu_usage_history
