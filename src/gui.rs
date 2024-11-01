@@ -22,12 +22,12 @@ pub struct WidgetApp {
 impl Default for WidgetApp {
     fn default() -> Self {
         Self {
+            last_update: time::Instant::now().checked_sub(time::Duration::from_secs(1)).unwrap(),
+            update_interval: time::Duration::from_secs(1),
             system: System::new(),
             disks: Disks::new_with_refreshed_list(),
             cpu_usage_history: VecDeque::with_capacity(100),
             memory_usage_history: VecDeque::with_capacity(100),
-            last_update: time::Instant::now(),
-            update_interval: time::Duration::from_secs(1),
             cpu_usage: Vec::new(),
             memory_usage: widgets::MemoryUsage::default(),
         }
@@ -60,6 +60,7 @@ impl eframe::App for WidgetApp {
                 self.memory_usage = widgets::memory_usage(&mut self.system);
                 self.disks.refresh();
                 widgets::cpu_usage_history(&mut self.system, &mut self.cpu_usage_history);
+                widgets::memory_usage_history(&mut self.system, &mut self.memory_usage_history);
                 self.last_update = time::Instant::now();
             }
 
@@ -125,7 +126,6 @@ impl eframe::App for WidgetApp {
 
             // Cpu Usage Plot
             egui::Window::new("Cpu Usage Plot").show(ctx, |ui| {
-
                 let cpu_usage_points: Vec<_> = self
                     .cpu_usage_history
                     .iter()
@@ -144,14 +144,6 @@ impl eframe::App for WidgetApp {
 
             // Memory Usage Plot
             egui::Window::new("Memory Usage Plot").show(ctx, |ui| {
-                self.system.refresh_memory();
-
-                self.memory_usage_history
-                    .push_back(self.system.used_memory() as f32 / 1_048_576.0);
-                if self.memory_usage_history.len() > 100 {
-                    self.memory_usage_history.pop_front();
-                }
-
                 let memory_usage_points: Vec<_> = self
                     .memory_usage_history
                     .iter()
