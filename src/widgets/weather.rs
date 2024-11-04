@@ -4,6 +4,7 @@ use serde_json;
 
 pub mod prelude {
     pub use super::weather_request;
+    pub use super::degrees_to_direction;
     pub use super::Weather;
     pub use super::Current;
     pub use super::CurrentUnits;
@@ -73,4 +74,27 @@ pub fn weather_request(client: &mut Client) -> Weather {
     };
 
     weather
+}
+
+pub fn degrees_to_direction(degree: u64) -> String {
+    match degree {
+        x if (0.0..=11.25).contains(&(x as f64)) => "N".to_string(),
+        x if (11.26..=33.75).contains(&(x as f64)) => "NNE".to_string(),
+        x if (33.76..=56.25).contains(&(x as f64)) => "NE".to_string(),
+        x if (56.26..=78.75).contains(&(x as f64)) => "ENE".to_string(),
+        x if (78.76..=101.25).contains(&(x as f64)) => "E".to_string(),
+        x if (101.26..=123.75).contains(&(x as f64)) => "ESE".to_string(),
+        x if (123.76..=146.25).contains(&(x as f64)) => "SE".to_string(),
+        x if (146.26..=168.75).contains(&(x as f64)) => "SSE".to_string(),
+        x if (168.76..=191.25).contains(&(x as f64)) => "S".to_string(),
+        x if (191.26..=213.75).contains(&(x as f64)) => "SSW".to_string(),
+        x if (213.76..=236.25).contains(&(x as f64)) => "SW".to_string(),
+        x if (236.26..=258.75).contains(&(x as f64)) => "WSW".to_string(),
+        x if (258.76..=281.25).contains(&(x as f64)) => "W".to_string(),
+        x if (281.26..=303.75).contains(&(x as f64)) => "WNW".to_string(),
+        x if (303.76..=326.25).contains(&(x as f64)) => "NW".to_string(),
+        x if (326.26..=348.75).contains(&(x as f64)) => "NNW".to_string(),
+        x if (348.76..=360.0).contains(&(x as f64)) => "N".to_string(),
+        _ => "N/A".to_string(),
+    }
 }
