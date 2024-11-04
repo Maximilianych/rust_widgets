@@ -244,23 +244,13 @@ impl eframe::App for WidgetApp {
                     self.weather.current.weather_code
                 ));
                 ui.label(format!(
-                    "Wind speed: {:.2} {}",
-                    self.weather.current.wind_speed_10m, self.weather.current_units.wind_speed_10m
+                    "Wind direction: {} ({})",
+                    widgets::degrees_to_direction(self.weather.current.wind_direction_10m),
+                    self.weather.current.wind_direction_10m
                 ));
                 ui.label(format!(
-                    "Wind direction: {} ({})",
-                    match self.weather.current.wind_direction_10m {
-                        x if (22.5..=67.5).contains(&(x as f64)) => "NE",
-                        x if (67.5..=112.5).contains(&(x as f64)) => "E",
-                        x if (112.5..=157.5).contains(&(x as f64)) => "SE",
-                        x if (157.5..=202.5).contains(&(x as f64)) => "S",
-                        x if (202.5..=247.5).contains(&(x as f64)) => "SW",
-                        x if (247.5..=292.5).contains(&(x as f64)) => "W",
-                        x if (292.5..=337.5).contains(&(x as f64)) => "NW",
-                        x if (337.5..=360.0).contains(&(x as f64)) || (0.0..=22.5).contains(&(x as f64)) => "N",
-                        _ => "N/A",
-                    },
-                    self.weather.current.wind_direction_10m
+                    "Wind speed: {:.2} {}",
+                    self.weather.current.wind_speed_10m, self.weather.current_units.wind_speed_10m
                 ));
                 ui.label(format!(
                     "Wind gusts: {:.2} {}",
