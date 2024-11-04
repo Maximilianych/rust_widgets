@@ -16,6 +16,7 @@ pub struct WidgetApp {
     update_interval: time::Duration,
     cpu_usage: Vec<f32>,
     memory_usage: widgets::MemoryUsage,
+    weather_client: reqwest::blocking::Client,
 }
 
 // Default implementation
@@ -30,6 +31,7 @@ impl Default for WidgetApp {
             memory_usage_history: VecDeque::with_capacity(100),
             cpu_usage: Vec::new(),
             memory_usage: widgets::MemoryUsage::default(),
+            weather_client: reqwest::blocking::Client::new(),
         }
     }
 }
@@ -46,6 +48,10 @@ impl WidgetApp {
         } else {
             false
         }
+    }
+
+    fn weather_need_update(&mut self) -> bool {
+
     }
 }
 
@@ -169,7 +175,25 @@ impl eframe::App for WidgetApp {
                     dt.date_naive()
                 ));
             });
+
+            // Weather
+            egui::Window::new("Weather").show(ctx, |ui| {
+                let weather = widgets::get_weather(&mut self.weather_client);
+                ui.label(format!("Temperature: {:.2} °C", weather.current.temperature_2m));
+                ui.label(format!("Feels like: {:.2} °C", weather.current.apparent_temperature));
+                ui.label(format!("Humidity: {:.2} %", weather.current.relative_humidity_2m));
+                ui.label(format!("Cloud cover: {:.2} %", weather.current.cloud_cover));
+                ui.label(format!("Is day: {}", weather.current.is_day));
+                ui.label(format!("Precipitation: {:.2} mm", weather.current.precipitation));
+                ui.label(format!("Rain: {:.2}", weather.current.rain));
+                ui.label(format!("Showers: {:.2}", weather.current.showers));
+                ui.label(format!("Snowfall: {:.2}", weather.current.snowfall));
+                ui.label(format!("Weather code: {}", weather.current.weather_code));
+                ui.label(format!("Wind speed: {:.2} m/s", weather.current.wind_speed_10m));
+                ui.label(format!("Wind direction: {}", weather.current.wind_direction_10m));
+                ui.label(format!("Wind gusts: {:.2} m/s", weather.current.wind_gusts_10m));
+                ui.label(format!("Pressure: {:.2} hPa", weather.current.surface_pressure));
+            });
         });
-        ctx.request_repaint();
     }
 }
