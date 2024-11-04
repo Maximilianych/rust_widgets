@@ -17,13 +17,18 @@ pub struct WidgetApp {
     cpu_usage: Vec<f32>,
     memory_usage: widgets::MemoryUsage,
     weather_client: reqwest::blocking::Client,
+    weather: widgets::Weather,
+    weather_last_update: time::Instant,
+    weather_update_interval: time::Duration,
 }
 
 // Default implementation
 impl Default for WidgetApp {
     fn default() -> Self {
         Self {
-            last_update: time::Instant::now().checked_sub(time::Duration::from_secs(1)).unwrap(),
+            last_update: time::Instant::now()
+                .checked_sub(time::Duration::from_secs(1))
+                .unwrap(),
             update_interval: time::Duration::from_secs(1),
             system: System::new(),
             disks: Disks::new_with_refreshed_list(),
@@ -32,6 +37,11 @@ impl Default for WidgetApp {
             cpu_usage: Vec::new(),
             memory_usage: widgets::MemoryUsage::default(),
             weather_client: reqwest::blocking::Client::new(),
+            weather: widgets::Weather::default(),
+            weather_last_update: time::Instant::now()
+                .checked_sub(time::Duration::from_secs(60 * 5))
+                .unwrap(),
+            weather_update_interval: time::Duration::from_secs(60 * 5),
         }
     }
 }
@@ -51,7 +61,11 @@ impl WidgetApp {
     }
 
     fn weather_need_update(&mut self) -> bool {
-
+        if self.weather_last_update.elapsed() > self.weather_update_interval {
+            true
+        } else {
+            false
+        }
     }
 }
 
@@ -60,7 +74,7 @@ impl eframe::App for WidgetApp {
     fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
         egui::CentralPanel::default().show(ctx, |ui| {
             ui.heading("Widgets");
-            
+
             if self.need_update() {
                 self.cpu_usage = widgets::cpu_usage(&mut self.system);
                 self.memory_usage = widgets::memory_usage(&mut self.system);
@@ -68,6 +82,11 @@ impl eframe::App for WidgetApp {
                 widgets::cpu_usage_history(&mut self.system, &mut self.cpu_usage_history);
                 widgets::memory_usage_history(&mut self.system, &mut self.memory_usage_history);
                 self.last_update = time::Instant::now();
+
+                if self.weather_need_update() {
+                    self.weather = widgets::weather_request(&mut self.weather_client);
+                    self.weather_last_update = time::Instant::now();
+                }
             }
 
             // Cpu Usage
@@ -79,7 +98,6 @@ impl eframe::App for WidgetApp {
 
             // Memory Usage
             egui::Window::new("Memory Usage").show(ctx, |ui| {
-
                 // TODO: beautiful groups
                 ui.label(format!(
                     "Total memory: {:.2} MB",
@@ -178,22 +196,72 @@ impl eframe::App for WidgetApp {
 
             // Weather
             egui::Window::new("Weather").show(ctx, |ui| {
-                let weather = widgets::get_weather(&mut self.weather_client);
-                ui.label(format!("Temperature: {:.2} °C", weather.current.temperature_2m));
-                ui.label(format!("Feels like: {:.2} °C", weather.current.apparent_temperature));
-                ui.label(format!("Humidity: {:.2} %", weather.current.relative_humidity_2m));
-                ui.label(format!("Cloud cover: {:.2} %", weather.current.cloud_cover));
-                ui.label(format!("Is day: {}", weather.current.is_day));
-                ui.label(format!("Precipitation: {:.2} mm", weather.current.precipitation));
-                ui.label(format!("Rain: {:.2}", weather.current.rain));
-                ui.label(format!("Showers: {:.2}", weather.current.showers));
-                ui.label(format!("Snowfall: {:.2}", weather.current.snowfall));
-                ui.label(format!("Weather code: {}", weather.current.weather_code));
-                ui.label(format!("Wind speed: {:.2} m/s", weather.current.wind_speed_10m));
-                ui.label(format!("Wind direction: {}", weather.current.wind_direction_10m));
-                ui.label(format!("Wind gusts: {:.2} m/s", weather.current.wind_gusts_10m));
-                ui.label(format!("Pressure: {:.2} hPa", weather.current.surface_pressure));
+                ui.label(format!(
+                    "Temperature: {:.2} {}",
+                    self.weather.current.temperature_2m, self.weather.current_units.temperature_2m
+                ));
+                ui.label(format!(
+                    "Feels like: {:.2} {}",
+                    self.weather.current.apparent_temperature,
+                    self.weather.current_units.apparent_temperature
+                ));
+                ui.label(format!(
+                    "Humidity: {:.2} {}",
+                    self.weather.current.relative_humidity_2m,
+                    self.weather.current_units.relative_humidity_2m
+                ));
+                ui.label(format!(
+                    "Cloud cover: {:.2} {}",
+                    self.weather.current.cloud_cover, self.weather.current_units.cloud_cover
+                ));
+                ui.label(format!(
+                    "Current time: {}",
+                    if self.weather.current.is_day == 1 {
+                        "day"
+                    } else {
+                        "night"
+                    }
+                ));
+                ui.label(format!(
+                    "Precipitation: {:.2} {}",
+                    self.weather.current.precipitation, self.weather.current_units.precipitation
+                ));
+                ui.label(format!(
+                    "Rain: {:.2} {}",
+                    self.weather.current.rain, self.weather.current_units.rain
+                ));
+                ui.label(format!(
+                    "Showers: {:.2} {}",
+                    self.weather.current.showers, self.weather.current_units.showers
+                ));
+                ui.label(format!(
+                    "Snowfall: {:.2} {}",
+                    self.weather.current.snowfall, self.weather.current_units.snowfall
+                ));
+                // TODO: add different guis for different weather_code
+                ui.label(format!(
+                    "Weather code: {}",
+                    self.weather.current.weather_code
+                ));
+                ui.label(format!(
+                    "Wind speed: {:.2} {}",
+                    self.weather.current.wind_speed_10m, self.weather.current_units.wind_speed_10m
+                ));
+                ui.label(format!(
+                    "Wind direction: {}",
+                    self.weather.current.wind_direction_10m
+                ));
+                ui.label(format!(
+                    "Wind gusts: {:.2} {}",
+                    self.weather.current.wind_gusts_10m, self.weather.current_units.wind_gusts_10m
+                ));
+                ui.label(format!(
+                    "Pressure: {:.2} {}",
+                    self.weather.current.surface_pressure,
+                    self.weather.current_units.surface_pressure
+                ));
             });
         });
+        ctx.request_repaint_after(time::Duration::from_millis(100));
     }
 }

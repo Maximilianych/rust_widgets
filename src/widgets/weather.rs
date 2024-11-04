@@ -3,13 +3,13 @@ use serde::{Deserialize, Serialize};
 use serde_json;
 
 pub mod prelude {
-    pub use super::get_weather;
+    pub use super::weather_request;
     pub use super::Weather;
     pub use super::Current;
     pub use super::CurrentUnits;
 }
 
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Debug, Default)]
 pub struct Weather {
     pub latitude: f64,
     pub longitude: f64,
@@ -22,7 +22,7 @@ pub struct Weather {
     pub current: Current,
 }
 
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Debug, Default)]
 pub struct CurrentUnits {
     pub time: String,
     pub interval: String,
@@ -42,7 +42,7 @@ pub struct CurrentUnits {
     pub wind_gusts_10m: String,
 }
 
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Debug, Default)]
 pub struct Current {
     pub time: String,
     pub interval: u64,
@@ -62,7 +62,7 @@ pub struct Current {
     pub wind_gusts_10m: f64,
 }
 
-pub fn get_weather(client: &mut Client) -> Weather {
+pub fn weather_request(client: &mut Client) -> Weather {
     let weather = {
         let res = client.get("https://api.open-meteo.com/v1/forecast?latitude=59.9386&longitude=30.3141&current=temperature_2m,relative_humidity_2m,apparent_temperature,is_day,precipitation,rain,showers,snowfall,weather_code,cloud_cover,surface_pressure,wind_speed_10m,wind_direction_10m,wind_gusts_10m&timezone=auto")
         .send()
