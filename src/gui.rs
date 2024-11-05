@@ -3,11 +3,14 @@ use egui_plot::{Line, Plot};
 use std::collections::VecDeque;
 use std::time;
 use sysinfo::{Disks, System};
+use raw_window_handle::{HasWindowHandle, RawWindowHandle};
+use winapi::{shared::windef::HWND, um::winuser::{GetWindowLongPtrW, SetLayeredWindowAttributes, SetWindowLongPtrW, SetWindowPos, GWL_EXSTYLE, GWL_STYLE, HWND_BOTTOM, HWND_TOPMOST, LWA_COLORKEY, SWP_NOACTIVATE, SWP_NOMOVE, SWP_NOSIZE, WS_BORDER, WS_CAPTION, WS_EX_TRANSPARENT, WS_THICKFRAME}};
 
 use crate::widgets;
 
 // WidgetApp
 pub struct WidgetApp {
+    window_handle: Option<RawWindowHandle>,
     system: System,
     disks: Disks,
     cpu_usage_history: VecDeque<f32>,
@@ -26,6 +29,7 @@ pub struct WidgetApp {
 impl Default for WidgetApp {
     fn default() -> Self {
         Self {
+            window_handle: None,
             last_update: time::Instant::now()
                 .checked_sub(time::Duration::from_secs(1))
                 .unwrap(),
@@ -48,8 +52,29 @@ impl Default for WidgetApp {
 
 // Some implementation
 impl WidgetApp {
-    pub fn new(_cc: &eframe::CreationContext<'_>) -> Self {
-        Self::default()
+    pub fn new(cc: &eframe::CreationContext<'_>) -> Self {
+        let window_handle = cc.window_handle().unwrap().as_raw();
+       
+        // FUCK FUCK FUCK
+        // match window_handle {
+        //     RawWindowHandle::Win32(window_handle) => {
+        //         let hwnd = window_handle.hwnd.get() as HWND;
+        //         eprintln!("Hwnd: {:?}", hwnd);
+        //         unsafe {
+        //             SetWindowPos(hwnd, HWND_TOPMOST, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE | SWP_NOACTIVATE );
+        //             let style = GetWindowLongPtrW(hwnd, GWL_STYLE);
+        //             SetWindowLongPtrW(hwnd, GWL_STYLE, style &!(WS_CAPTION | WS_BORDER | WS_THICKFRAME) as isize);
+        //             SetLayeredWindowAttributes(hwnd, 0, 0, LWA_COLORKEY);
+        //             SetWindowLongPtrW(hwnd, GWL_EXSTYLE, GetWindowLongPtrW(hwnd, GWL_EXSTYLE) | WS_EX_TRANSPARENT as isize);
+        //         }
+        //     }
+        //     _ => {}
+        // };
+
+        Self {
+            window_handle: Some(window_handle),
+            ..Default::default()
+        }
     }
 
     pub fn need_update(&mut self) -> bool {

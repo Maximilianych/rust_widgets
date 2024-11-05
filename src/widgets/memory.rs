@@ -5,7 +5,7 @@ pub mod prelude {
     pub use super::{memory_usage, memory_usage_history, MemoryUsage};
 }
 
-#[derive(Default)]
+#[derive(Default, Debug)]
 pub struct MemoryUsage {
     pub total_memory: u64,
     pub used_memory: u64,

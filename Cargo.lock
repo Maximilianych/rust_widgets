@@ -2682,10 +2682,12 @@ dependencies = [
  "eframe",
  "egui",
  "egui_plot",
+ "raw-window-handle",
  "reqwest",
  "serde",
  "serde_json",
  "sysinfo",
+ "winapi",
 ]
 
 [[package]]
