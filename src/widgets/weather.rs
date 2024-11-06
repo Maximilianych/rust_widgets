@@ -3,11 +3,11 @@ use serde::{Deserialize, Serialize};
 use serde_json;
 
 pub mod prelude {
-    pub use super::weather_request;
     pub use super::degrees_to_direction;
-    pub use super::Weather;
+    pub use super::weather_request;
     pub use super::Current;
     pub use super::CurrentUnits;
+    pub use super::Weather;
 }
 
 #[derive(Serialize, Deserialize, Debug, Default)]
@@ -64,15 +64,17 @@ pub struct Current {
 }
 
 pub fn weather_request(client: &mut Client) -> Weather {
-    let weather = {
-        let res = client.get("https://api.open-meteo.com/v1/forecast?latitude=59.9386&longitude=30.3141&current=temperature_2m,relative_humidity_2m,apparent_temperature,is_day,precipitation,rain,showers,snowfall,weather_code,cloud_cover,surface_pressure,wind_speed_10m,wind_direction_10m,wind_gusts_10m&timezone=auto")
-        .send()
-        .unwrap()
-        .text()
-        .unwrap();
-        serde_json::from_str(&res).unwrap()
+    let weather = match client.get("https://api.open-meteo.com/v1/forecast?latitude=59.9386&longitude=30.3141&current=temperature_2m,relative_humidity_2m,apparent_temperature,is_day,precipitation,rain,showers,snowfall,weather_code,cloud_cover,surface_pressure,wind_speed_10m,wind_direction_10m,wind_gusts_10m&timezone=auto").send() {
+        Ok(res) => {
+                let res = res.text().unwrap();
+                serde_json::from_str(&res).unwrap()
+            },
+        Err(e) => {
+            eprintln!("Error: {}", e);
+            Weather::default()
+        },
     };
-
+    
     weather
 }
 

@@ -6,9 +6,10 @@ use gui::WidgetApp;
 
 fn main() -> eframe::Result {
     let native_options = eframe::NativeOptions {
-        // viewport: ViewportBuilder::default().with_always_on_top().with_decorations(false).with_transparent(true).with_resizable(false).with_titlebar_shown(true),
+        viewport: ViewportBuilder::default().with_decorations(false),
         ..Default::default()
     };
+    
     eframe::run_native(
         "My Widgets Yopta",
         native_options,

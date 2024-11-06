@@ -4,7 +4,7 @@ use std::collections::VecDeque;
 use std::time;
 use sysinfo::{Disks, System};
 use raw_window_handle::{HasWindowHandle, RawWindowHandle};
-use winapi::{shared::windef::HWND, um::winuser::{GetWindowLongPtrW, SetLayeredWindowAttributes, SetWindowLongPtrW, SetWindowPos, GWL_EXSTYLE, GWL_STYLE, HWND_BOTTOM, HWND_TOPMOST, LWA_COLORKEY, SWP_NOACTIVATE, SWP_NOMOVE, SWP_NOSIZE, WS_BORDER, WS_CAPTION, WS_EX_TRANSPARENT, WS_THICKFRAME}};
+use winapi::{shared::windef::HWND, um::winuser::{IsIconic, ShowWindow}};
 
 use crate::widgets;
 
@@ -53,27 +53,34 @@ impl Default for WidgetApp {
 // Some implementation
 impl WidgetApp {
     pub fn new(cc: &eframe::CreationContext<'_>) -> Self {
-        let window_handle = cc.window_handle().unwrap().as_raw();
-       
-        // FUCK FUCK FUCK
-        // match window_handle {
-        //     RawWindowHandle::Win32(window_handle) => {
-        //         let hwnd = window_handle.hwnd.get() as HWND;
-        //         eprintln!("Hwnd: {:?}", hwnd);
-        //         unsafe {
-        //             SetWindowPos(hwnd, HWND_TOPMOST, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE | SWP_NOACTIVATE );
-        //             let style = GetWindowLongPtrW(hwnd, GWL_STYLE);
-        //             SetWindowLongPtrW(hwnd, GWL_STYLE, style &!(WS_CAPTION | WS_BORDER | WS_THICKFRAME) as isize);
-        //             SetLayeredWindowAttributes(hwnd, 0, 0, LWA_COLORKEY);
-        //             SetWindowLongPtrW(hwnd, GWL_EXSTYLE, GetWindowLongPtrW(hwnd, GWL_EXSTYLE) | WS_EX_TRANSPARENT as isize);
-        //         }
-        //     }
-        //     _ => {}
-        // };
+        let window_handle = if let Ok(window_handle) = cc.window_handle() {
+            Some(window_handle.as_raw())
+        } else {
+            None
+        };
 
         Self {
-            window_handle: Some(window_handle),
+            window_handle: window_handle,
             ..Default::default()
+        }
+    }
+
+    fn keep_visible(&self) {
+        if let Some(window_handle) = self.window_handle {
+            match window_handle {
+                RawWindowHandle::Win32(window_handle) => {
+                    let hwnd = window_handle.hwnd.get() as HWND;
+                    unsafe {
+                        eprintln!("Hwnd: {:?}", hwnd);
+                        eprintln!("IsIconic: {}", IsIconic(hwnd));
+                        if IsIconic(hwnd) == 1 {
+                            ShowWindow(hwnd, 1);
+                            eprintln!("ShowWindow");
+                        }
+                    }
+                }
+                _ => {}
+            }
         }
     }
 
@@ -97,6 +104,8 @@ impl WidgetApp {
 // App implementation
 impl eframe::App for WidgetApp {
     fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
+        self.keep_visible();
+
         egui::CentralPanel::default().show(ctx, |ui| {
             ui.heading("Widgets");
 
@@ -288,6 +297,6 @@ impl eframe::App for WidgetApp {
                 ));
             });
         });
-        ctx.request_repaint_after(time::Duration::from_millis(100));
+        ctx.request_repaint_after(time::Duration::from_millis(500));
     }
 }
