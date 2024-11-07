@@ -1,10 +1,16 @@
 use chrono::Local;
+use egui::TextBuffer;
 use egui_plot::{Line, Plot};
+use raw_window_handle::{HasWindowHandle, RawWindowHandle};
 use std::collections::VecDeque;
 use std::time;
 use sysinfo::{Disks, System};
-use raw_window_handle::{HasWindowHandle, RawWindowHandle};
-use winapi::{shared::windef::HWND, um::winuser::{IsIconic, ShowWindow}};
+use winapi::{
+    shared::windef::HWND,
+    um::{winnt::LPCSTR, winuser::{
+        FindWindowA, GetActiveWindow, GetDesktopWindow, GetForegroundWindow, IsIconic, SetWindowLongPtrA, ShowWindow, GWL_HWNDPARENT, SW_RESTORE
+    }},
+};
 
 use crate::widgets;
 
@@ -68,17 +74,18 @@ impl WidgetApp {
     fn keep_visible(&self) {
         if let Some(window_handle) = self.window_handle {
             match window_handle {
-                RawWindowHandle::Win32(window_handle) => {
+                RawWindowHandle::Win32(window_handle) => unsafe {
                     let hwnd = window_handle.hwnd.get() as HWND;
-                    unsafe {
-                        eprintln!("Hwnd: {:?}", hwnd);
-                        eprintln!("IsIconic: {}", IsIconic(hwnd));
-                        if IsIconic(hwnd) == 1 {
-                            ShowWindow(hwnd, 1);
-                            eprintln!("ShowWindow");
-                        }
+                    let progman_name = "Progman".as_ptr() as *const i8;
+                    let program_manager_name = "Program Manager".as_ptr() as *const i8;
+                    SetWindowLongPtrA(hwnd, GWL_HWNDPARENT, FindWindowA(progman_name, program_manager_name) as isize);
+                    eprintln!("Hwnd: {:?}", hwnd);
+                    eprintln!("IsIconic: {}", IsIconic(hwnd));
+                    if IsIconic(hwnd) == 1 {
+                        ShowWindow(hwnd, SW_RESTORE);
+                        eprintln!("ShowWindow");
                     }
-                }
+                },
                 _ => {}
             }
         }
